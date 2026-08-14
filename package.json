@@ -1,0 +1,105 @@
+{
+  "name": "sofistik-environment",
+  "author": "lumine-code",
+  "description": "Resolve the SOFiSTiK installation and the release each file targets.",
+  "repository": "https://github.com/lumine-code/sofistik-environment",
+  "bugs": {
+    "url": "https://github.com/lumine-code/sofistik-environment/issues"
+  },
+  "keywords": [
+    "cadinp",
+    "installation",
+    "version-detection",
+    "structural-analysis",
+    "fem"
+  ],
+  "version": "1.0.0",
+  "license": "MIT",
+  "engines": {
+    "lumine": "^1.0.0"
+  },
+  "main": "./lib/main",
+  "files": [
+    "docs",
+    "lib",
+    "spec"
+  ],
+  "scripts": {
+    "test": "lumine --test spec",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "providedServices": {
+    "sofistik.environment": {
+      "description": "Resolves the SOFiSTiK release for a file and where that release is installed.",
+      "versions": {
+        "1.0.0": "provideSofistikEnvironment"
+      }
+    }
+  },
+  "configSchema": {
+    "envPath": {
+      "title": "SOFiSTiK installation path",
+      "description": "Path to the SOFiSTiK installation folder holding the version directories.",
+      "type": "string",
+      "default": "C:\\Program Files\\SOFiSTiK"
+    },
+    "version": {
+      "title": "SOFiSTiK version",
+      "description": "Release to use when a file does not name one. 'Auto' picks the newest installed release.",
+      "type": "string",
+      "enum": [
+        "Auto",
+        "2026",
+        "2025",
+        "2024",
+        "2023",
+        "2022",
+        "2020",
+        "2018"
+      ],
+      "default": "Auto"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Language the keyword names are read in when a file does not declare one.",
+      "type": "string",
+      "enum": [
+        {
+          "value": "English",
+          "description": "English"
+        },
+        {
+          "value": "German",
+          "description": "German"
+        }
+      ],
+      "default": "English"
+    },
+    "edition": {
+      "title": "Licensed edition",
+      "description": "Which licensed build is installed.",
+      "type": "string",
+      "enum": [
+        {
+          "value": "professional",
+          "description": "Professional"
+        },
+        {
+          "value": "educational",
+          "description": "Educational"
+        }
+      ],
+      "default": "professional"
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-n": "^18.2.2",
+    "globals": "^17.9.0",
+    "prettier": "^3.9.6"
+  }
+}
