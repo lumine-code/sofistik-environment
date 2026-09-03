@@ -10,6 +10,7 @@ Resolve the SOFiSTiK installation and the release each file targets.
 - **Richest evidence first**: an explicit request, then the file's own header, a neighbouring `sofistik.def`, the configured release, and finally the newest release actually installed.
 - **Installed releases**: scans the installation folder for the versions really present, so an unmarked file does not resolve to a release you do not have.
 - **Whole installation**: answers with the licensed edition and the keyword language too, so no other package keeps a second copy of either setting.
+- **Matching keyword data**: returns the commands and schemas for the resolved release and language through the same service, without a separate keyword provider.
 
 ## Installation
 
@@ -31,9 +32,11 @@ or with a `sofistik.def` beside it:
 SOF_VERSION = 2024
 ```
 
+Consumers call `getKeywordContext({ editor })` on the environment provider to obtain the commands and schemas for that file. It returns `null` when the file targets a release for which the package has no data; when no release can be resolved at all, it deliberately returns the newest committed dataset and its context reports that dataset's real version.
+
 ## Services
 
-- [`sofistik.environment`](docs/sofistik.environment.md): provided to resolve the SOFiSTiK release a file belongs to, the folder that release is installed in, and the licensed edition and language it is read with.
+- [`sofistik.environment`](docs/sofistik.environment.md): provided to resolve the SOFiSTiK release a file belongs to, its installation, licensed edition and language, and the matching keyword data.
 
 ## Contributing
 

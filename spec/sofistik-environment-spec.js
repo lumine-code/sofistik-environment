@@ -24,8 +24,9 @@ describe("sofistik-environment", () => {
     return { getPath: () => filePath, lineTextForBufferRow: () => firstLine };
   }
 
-  function providerFor(settings = {}) {
+  function providerFor(settings = {}, options = {}) {
     return new SofistikEnvironmentProvider({
+      ...options,
       config: () => ({ get: (key) => settings[key] }),
     });
   }
@@ -266,6 +267,126 @@ describe("sofistik-environment", () => {
     });
   });
 
+  describe("resolving keyword data", () => {
+    it("uses the release and German language declared by the file header", () => {
+      const filePath = path.join(makeTempDir(), "model.dat");
+      const editor = editorShowing(filePath, "@ SOFiSTiK 2024 DE");
+      const keywords = providerFor({}).getKeywordContext({ editor, filePath });
+
+      expect(keywords.getVersion()).toBe("2024");
+      expect(keywords.getLanguage()).toBe("de");
+      expect(keywords.getModuleNames()).toContain("AQUA");
+    });
+
+    it("uses a neighbouring definition with the configured language", () => {
+      const dir = makeTempDir();
+      fs.writeFileSync(path.join(dir, "sofistik.def"), "SOF_VERSION = 2022\n");
+      const keywords = providerFor({
+        "sofistik-environment.language": "German",
+      }).getKeywordContext({ filePath: path.join(dir, "model.dat") });
+
+      expect(keywords.getVersion()).toBe("2022");
+      expect(keywords.getLanguage()).toBe("de");
+    });
+
+    it("uses the configured release and English language", () => {
+      const keywords = providerFor({
+        "sofistik-environment.version": "2020",
+        "sofistik-environment.language": "English",
+      }).getKeywordContext();
+
+      expect(keywords.getVersion()).toBe("2020");
+      expect(keywords.getLanguage()).toBe("en");
+    });
+
+    it("uses the newest installed release when the setting is Auto", () => {
+      const root = install(makeTempDir(), "2023", "2025");
+      const keywords = providerFor({
+        "sofistik-environment.envPath": root,
+        "sofistik-environment.version": "Auto",
+      }).getKeywordContext();
+
+      expect(keywords.getVersion()).toBe("2025");
+      expect(keywords.getLanguage()).toBe("en");
+    });
+
+    it("uses the latest dataset when no environment release can be resolved", () => {
+      const keywords = providerFor({}).getKeywordContext();
+
+      expect(keywords.getVersion()).toBe("2026");
+      expect(keywords.getLanguage()).toBe("en");
+    });
+
+    it("returns null for an unsupported explicit or resolved release", () => {
+      const filePath = path.join(makeTempDir(), "model.dat");
+      const editor = editorShowing(filePath, "@ SOFiSTiK 2099 EN");
+      const provider = providerFor({});
+
+      expect(provider.getKeywordContext({ version: "2099" })).toBeNull();
+      expect(provider.getKeywordContext({ editor, filePath })).toBeNull();
+    });
+
+    it("resolves the public executable module aliases", () => {
+      const keywords = providerFor({
+        "sofistik-environment.version": "2026",
+      }).getKeywordContext();
+
+      for (const [publicName, sourceName, commandName] of [
+        ["DBMERG", "DBME", "CDB"],
+        ["STAR2", "STAR", "DESI"],
+        ["TUNARS", "TUNA", "GEO"],
+      ]) {
+        expect(keywords.getModuleNames()).toContain(publicName);
+        expect(keywords.getModuleCommands(publicName)).toEqual(
+          keywords.getModuleCommands(sourceName),
+        );
+        expect(keywords.getModuleCommands(publicName.toLowerCase())).toContain(commandName);
+      }
+    });
+
+    it("creates one data provider and clears both provider caches", () => {
+      const root = install(makeTempDir(), "2026");
+      let creations = 0;
+      let scans = 0;
+      let dataClears = 0;
+      const keywordContext = {
+        getVersion: () => "2026",
+        getLanguage: () => "en",
+      };
+      const dataProvider = {
+        forRelease: () => keywordContext,
+        clearCache: () => dataClears++,
+      };
+      const provider = providerFor(
+        { "sofistik-environment.envPath": root },
+        {
+          createDataProvider() {
+            creations++;
+            return dataProvider;
+          },
+          readdir(directory) {
+            scans++;
+            return fs.readdirSync(directory);
+          },
+        },
+      );
+
+      expect(provider.getKeywordContext()).toBe(keywordContext);
+      expect(provider.getKeywordContext()).toBe(keywordContext);
+      expect(creations).toBe(1);
+      provider.getInstalledVersions();
+      provider.getInstalledVersions();
+      expect(scans).toBe(1);
+
+      provider.clearCache();
+      expect(dataClears).toBe(1);
+      provider.getInstalledVersions();
+      provider.getKeywordContext();
+      expect(scans).toBe(2);
+      expect(creations).toBe(1);
+    });
+  });
+
   describe("the service", () => {
     let mainModule;
 
@@ -283,6 +404,7 @@ describe("sofistik-environment", () => {
       expect(service.name).toBe("sofistik-environment");
       expect(service.version).toBe("1.0.0");
       expect(typeof service.provider.resolve).toBe("function");
+      expect(typeof service.provider.getKeywordContext).toBe("function");
       expect(mainModule.provideSofistikEnvironment().provider).toBe(service.provider);
     });
 
