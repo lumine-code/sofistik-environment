@@ -82,13 +82,15 @@ type KeywordContext = {
 };
 
 type CommandSchema = {
-  slots: Array<{
-    position: number;
-    name: string | null;
-    kind: "keyword" | "literal" | "enum" | "comment" | "placeholder";
-    dataTypeCode: string | null;
-    enumValues: string[];
-    enumRedirect: { command: string; item: string } | null;
+  forms: Array<{
+    slots: Array<{
+      position: number;
+      name: string | null;
+      kind: "keyword" | "literal" | "enum" | "comment" | "placeholder";
+      dataTypeCode: string | null;
+      enumValues: string[];
+      enumRedirect: { command: string; item: string } | null;
+    }>;
   }>;
 };
 ```
